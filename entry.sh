@@ -14,8 +14,15 @@ TAG="${TAG:-${GITHUB_REF_NAME}}"
 # GitHub Token（需有 repo 权限），为必填项，否则脚本终止
 GITHUB_TOKEN="${GITHUB_TOKEN:? GITHUB_TOKEN is required}"
 
+# 处理 RELEASE_BODY，默认使用 TAG
+RELEASE_BODY="${RELEASE_BODY:-}"
+if [[ -z "$RELEASE_BODY" ]]; then
+  RELEASE_BODY="auto-generated release for $TAG"
+fi
+
 # 上传的文件列表，支持通过环境变量传入或命令行参数传入
 FILES="${FILES:-$@}"
+
 
 # GitHub API 请求的认证头（推荐使用 Bearer 形式）
 HEADER_AUTH="Authorization: Bearer ${GITHUB_TOKEN}"
@@ -57,7 +64,7 @@ get_or_create_release_id() {
     return 0
   fi
   local payload
-  payload=$(jq -n --arg tag "$tag" --arg name "$tag" --arg body "auto-generated release for $tag" '{
+  payload=$(jq -n --arg tag "$tag" --arg name "$tag" --arg body "$RELEASE_BODY" '{
     tag_name: $tag,
     name: $name,
     body: $body,

@@ -15,6 +15,9 @@ inputs:
   repo:
     description: 'Repository in format "owner/repo" (defaults to current repo)'
     required: false
+  release_body:
+    description: 'Release description body (optional)'
+    required: false
 
 runs:
   using: 'composite'
@@ -27,6 +30,7 @@ runs:
         FILES: ${{ inputs.files }}
         TAG: ${{ inputs.tag }}
         GITHUB_REPO: ${{ inputs.repo }}
+        RELEASE_BODY: ${{ inputs.release_body }}
 
 branding:
   icon: 'airplay'
