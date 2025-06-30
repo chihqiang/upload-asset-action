@@ -14,10 +14,12 @@ A GitHub Action that uploads assets to a GitHub release, with support for overwr
 
 ### 🔧 Inputs
 
-| Name           | Description                             | Required |
-| -------------- | --------------------------------------- | -------- |
-| `github_token` | GitHub token with `repo` scope          | ✅ Yes    |
-| `files`        | Space-separated list of files to upload | ✅ Yes    |
+| Name           | Description                           | Required |
+| -------------- | ----------------------------------- | -------- |
+| `github_token` | GitHub token with `repo` scope      | ✅ Yes   |
+| `files`        | Space-separated list of files to upload | ✅ Yes   |
+| `release_body` | Release description body (optional) | ❌ No    |
+
 
 ### 📁 Example workflow
 

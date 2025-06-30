@@ -1,57 +1,92 @@
 #!/bin/bash
+set -euo pipefail  # 遇到错误、未定义变量或管道错误立即退出
 
-# ======= Config =======
-# Warehouse name, in the format of username/warehouse name
+set -x
 
+# ========== 配置项 ==========
+
+# GitHub 仓库名（如 user/repo），优先取 GITHUB_REPO，否则取 GitHub Actions 提供的 GITHUB_REPOSITORY
 GITHUB_REPO="${GITHUB_REPO:-${GITHUB_REPOSITORY}}"
-# Release tag name
+
+# 发布的 Tag 名称，优先取 TAG，否则取 GitHub Actions 提供的 GITHUB_REF_NAME
 TAG="${TAG:-${GITHUB_REF_NAME}}"
-# GitHub Personal Access Token (requires repo permissions)  
+
+# GitHub Token（需有 repo 权限），为必填项，否则脚本终止
 GITHUB_TOKEN="${GITHUB_TOKEN:? GITHUB_TOKEN is required}"
-# Support passing in parameters
+
+# 处理 RELEASE_BODY，默认使用 TAG
+RELEASE_BODY="${RELEASE_BODY:-}"
+if [[ -z "$RELEASE_BODY" ]]; then
+  RELEASE_BODY="auto-generated release for $TAG"
+fi
+
+# 上传的文件列表，支持通过环境变量传入或命令行参数传入
 FILES="${FILES:-$@}"
 
 
-# === Colored output helpers ===
-color_echo() {
-  local color_code=$1
-  shift
-  echo -e "\033[${color_code}m$@\033[0m"
-}
-info()    { color_echo "1;34" "🔍 $@"; }
-success() { color_echo "1;32" "✅ $@"; }
-warning() { color_echo "1;33" "⚠️  $@"; }
-error()   { color_echo "1;31" "❌ $@"; }
-step()    { color_echo "1;36" "🚀 $@"; }
-divider() { echo -e "\033[1;30m--------------------------------------------------\033[0m"; }
+# GitHub API 请求的认证头（推荐使用 Bearer 形式）
+HEADER_AUTH="Authorization: Bearer ${GITHUB_TOKEN}"
 
-if [ -z "$FILES" ]; then
-  error "No files specified. Skipping upload."
+# ========== 彩色输出工具函数 ==========
+color_echo() { local c=$1; shift; echo -e "\033[${c}m$@\033[0m"; }  # 输出带颜色的文本
+info()    { color_echo "1;34" "🔍 $@"; }     # 蓝色信息提示
+success() { color_echo "1;32" "✅ $@"; }     # 绿色成功提示
+warning() { color_echo "1;33" "⚠️  $@"; }    # 黄色警告提示
+error()   { color_echo "1;31" "❌ $@"; }     # 红色错误提示
+step()    { color_echo "1;36" "🚀 $@"; }     # 青色步骤提示
+
+# ========== 校验触发事件类型 ==========
+if [[ "$GITHUB_EVENT_NAME" != "release" && "$GITHUB_EVENT_NAME" != "push" ]]; then
+  error "Must be triggered by a 'release' or 'push' event, the current event is: $GITHUB_EVENT_NAME"
+  exit 1
+fi
+
+# 如果是 push 事件但不是 tag 类型（即非 refs/tags/*），则跳过上传
+if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" != refs/tags/* ]]; then
+  warning "Push event is not a tag push, skip uploading"
   exit 0
 fi
 
-if [ "$GITHUB_EVENT_NAME" != "release" ]; then
-  error "This script must be triggered by a 'release' event. Current event: $GITHUB_EVENT_NAME"
-  exit 1
-fi
+# 打印基础信息
+info "GitHub Repository: $GITHUB_REPO"
+info "Publish Tags: $TAG"
 
-info "GitHub Repo: $GITHUB_REPO"
-info "GitHub Tag: $TAG"
+# ========== 获取或创建 Release ID ==========
+get_or_create_release_id() {
+  local repo="$1" tag="$2"
+  local res id
+  # 尝试根据 tag 获取 release 信息
+  res=$(curl -s -H "$HEADER_AUTH" "https://api.github.com/repos/${repo}/releases/tags/${tag}")
+  id=$(echo "$res" | jq -r '.id // empty')
 
-HEADER_AUTH="Authorization: token ${GITHUB_TOKEN}"
-# === Get release ID ===
-step "Fetching release ID for tag: ${TAG}"
-RELEASE_JSON=$(curl -s -H "${HEADER_AUTH}" "https://api.github.com/repos/${GITHUB_REPO}/releases/tags/${TAG}")
-RELEASE_ID=$(echo "$RELEASE_JSON" | jq -r '.id')
-if [ "$RELEASE_ID" == "null" ] || [ -z "$RELEASE_ID" ]; then
-  error "Release not found for tag: ${TAG}"
-  exit 1
-fi
-success "Release ID: $RELEASE_ID"
+  if [[ -n "$id" ]]; then
+    echo "$id"
+    return 0
+  fi
+  local payload
+  payload=$(jq -n --arg tag "$tag" --arg name "$tag" --arg body "$RELEASE_BODY" '{
+    tag_name: $tag,
+    name: $name,
+    body: $body,
+    draft: false,
+    prerelease: false
+  }')
+  # 发送 POST 请求创建 release
+  res=$(curl -s -X POST -H "$HEADER_AUTH" -H "Content-Type: application/json" -d "$payload" "https://api.github.com/repos/${repo}/releases")
+  id=$(echo "$res" | jq -r '.id // empty')
+  if [[ -n "$id" ]]; then
+    echo "$id"
+    return 0
+  else
+    echo "$res" | jq '.' >&2
+    return 1
+  fi
+}
 
 # === Upload function ===
 upload_asset() {
-  local FILE_NAME="$1"
+  local RELEASE_ID="$1"
+  local FILE_NAME="$2"
   local BASE_NAME
   BASE_NAME="$(basename "$FILE_NAME")"
   if [ ! -f "$FILE_NAME" ]; then
@@ -102,26 +137,26 @@ upload_asset() {
 }
 
 
-IFS=' ' read -r -a FILES_ARRAY <<< "$(echo "$FILES" | tr '\n' ' ')"
+# ========== 主执行流程 ==========
 
-# === Check if all files exist ===
-check_files_exist() {
-  local all_exist=true
-  for FILE in "${FILES_ARRAY[@]}"; do
-    if [ ! -f "$FILE" ]; then
-      error "File not found: $FILE"
-      all_exist=false
-    fi
-  done
+# 获取或创建 Release ID
+RELEASE_ID=$(get_or_create_release_id "$GITHUB_REPO" "$TAG") || exit 1
 
-  if [ "$all_exist" = false ]; then
-    error "One or more files do not exist. Aborting upload."
+
+success "Successfully obtained Release ID ${RELEASE_ID}"
+
+# 将文件列表拆成数组
+read -r -a FILES_ARRAY <<< "$FILES"
+
+# 校验每个文件是否存在
+for f in "${FILES_ARRAY[@]}"; do
+  if [[ ! -f "$f" ]]; then
+    error "File not found: $f"
     exit 1
   fi
-}
+done
 
-check_files_exist
-
-for FILE in "${FILES_ARRAY[@]}"; do
-  upload_asset ${FILE} || exit 1
+# 遍历并上传每个文件
+for f in "${FILES_ARRAY[@]}"; do
+  upload_asset "$RELEASE_ID" "$f" || exit 1
 done
