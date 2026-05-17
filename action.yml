@@ -1,7 +1,6 @@
-name: 'Bash Upload GitHub Release Assets'
+name: 'Upload GitHub Release Assets'
 description: 'Upload release assets to GitHub Releases with overwrite support'
 author: 'zhiqiang <zhiqiang2033@gmail.com>'
-
 inputs:
   github_token:
     description: 'GitHub Token with `repo` scope'
@@ -18,20 +17,9 @@ inputs:
   release_body:
     description: 'Release description body (optional)'
     required: false
-
 runs:
-  using: 'composite'
-  steps:
-    - name: Run Upload GitHub Release Assets
-      shell: bash
-      run: bash "${{ github.action_path }}/entry.sh"
-      env:
-        GITHUB_TOKEN: ${{ inputs.github_token }}
-        FILES: ${{ inputs.files }}
-        TAG: ${{ inputs.tag }}
-        GITHUB_REPO: ${{ inputs.repo }}
-        RELEASE_BODY: ${{ inputs.release_body }}
-
+  using: 'node20'
+  main: 'dist/index.js'
 branding:
   icon: 'airplay'
   color: 'red'
