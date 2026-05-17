@@ -1,4 +1,4 @@
-name: 'Upload GitHub Release Assets'
+name: 'upload-gh-release-assets'
 description: 'Upload release assets to GitHub Releases with overwrite support'
 author: 'zhiqiang <zhiqiang2033@gmail.com>'
 inputs:
