@@ -26986,8 +26986,7 @@ function getConfig() {
   const eventName = process.env.GITHUB_EVENT_NAME || "";
   const ref = process.env.GITHUB_REF || "";
   if (!githubToken) {
-    error2("github_token is required. Please set it via input or GITHUB_TOKEN environment variable");
-    core.setFailed("github_token is required");
+    core.setFailed("github_token is required. Please set it via input or GITHUB_TOKEN environment variable");
     process.exit(1);
   }
   return {
@@ -27084,14 +27083,12 @@ async function main() {
   validateEvent(config);
   const files = await getUploadFiles();
   if (files.length === 0) {
-    error2("No files to upload");
     core.setFailed("No files to upload");
     return;
   }
   info2(`Total files to upload: ${files.length}`);
   for (const file of files) {
     if (!import_fs2.default.existsSync(file)) {
-      error2(`File not found: ${file}`);
       core.setFailed(`File not found: ${file}`);
       return;
     }
@@ -27109,13 +27106,7 @@ async function main() {
   );
   const failed = results.filter((r) => r.status === "rejected");
   if (failed.length > 0) {
-    error2(`${failed.length} file(s) failed to upload`);
-    for (const result of failed) {
-      if (result.status === "rejected") {
-        error2(`Error: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
-      }
-    }
-    core.setFailed("Some files failed to upload");
+    core.setFailed(`${failed.length} file(s) failed to upload`);
     return;
   }
   const downloadUrls = results.map((r) => r.value.browser_download_url);
