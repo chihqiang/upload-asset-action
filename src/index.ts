@@ -92,8 +92,7 @@ function getConfig(): Config {
   const ref = process.env.GITHUB_REF || '';
 
   if (!githubToken) {
-    error('github_token is required. Please set it via input or GITHUB_TOKEN environment variable');
-    core.setFailed('github_token is required');
+    core.setFailed('github_token is required. Please set it via input or GITHUB_TOKEN environment variable');
     process.exit(1);
   }
 
@@ -226,7 +225,6 @@ async function main(): Promise<void> {
   // 获取需要上传的文件
   const files = await getUploadFiles();
   if (files.length === 0) {
-    error('No files to upload');
     core.setFailed('No files to upload');
     return;
   }
@@ -236,7 +234,6 @@ async function main(): Promise<void> {
   // Validate files exist
   for (const file of files) {
     if (!fs.existsSync(file)) {
-      error(`File not found: ${file}`);
       core.setFailed(`File not found: ${file}`);
       return;
     }
@@ -260,13 +257,7 @@ async function main(): Promise<void> {
 
   const failed = results.filter(r => r.status === 'rejected');
   if (failed.length > 0) {
-    error(`${failed.length} file(s) failed to upload`);
-    for (const result of failed) {
-      if (result.status === 'rejected') {
-        error(`Error: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`);
-      }
-    }
-    core.setFailed('Some files failed to upload');
+    core.setFailed(`${failed.length} file(s) failed to upload`);
     return;
   }
 
