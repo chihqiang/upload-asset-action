@@ -82,19 +82,19 @@ This action requires a GitHub token (`GITHUB_TOKEN`) with `repo` permissions to:
 ### Prerequisites
 
 - Node.js 20+
-- pnpm (or npm/yarn)
+- npm (or npm/yarn)
 
 ### Build
 
 ```bash
-pnpm install
-pnpm build
+npm install
+npm build
 ```
 
 ### Type Checking
 
 ```bash
-pnpm test
+npm test
 ```
 
 ## License
