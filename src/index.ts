@@ -79,15 +79,14 @@ async function getUploadFiles(): Promise<string[]> {
     info(`Additional files from GOBUILD_FILES: ${envFiles.join(', ')}`);
   }
 
-  const files = await expandGlobFiles(allFiles);
-  return files;
+  return await expandGlobFiles(allFiles);
 }
 
 function getConfig(): Config {
   const githubToken = core.getInput('github_token') || process.env.GITHUB_TOKEN || '';
   const tag = core.getInput('tag') || process.env.GITHUB_REF_NAME || '';
   const repo = core.getInput('repo') || process.env.GITHUB_REPOSITORY || '';
-  const releaseBody = core.getInput('release_body') || `chihqiang/upload-asset-action for ${tag}`;
+  const releaseBody = core.getInput('release_body') || '';
   const eventName = process.env.GITHUB_EVENT_NAME || '';
   const ref = process.env.GITHUB_REF || '';
 
@@ -142,6 +141,19 @@ async function getOrCreateRelease(
     }
   }
 
+  // Generate release notes if no custom body provided
+  let body = releaseBody;
+  if (!body) {
+    step('Generating release notes...');
+    const notes = await octokit.rest.repos.generateReleaseNotes({
+      owner,
+      repo: repoName,
+      tag_name: tag,
+    });
+    body = notes.data.body;
+    info(`Generated release notes:\n${body}`);
+  }
+
   // Create new release
   step('Creating new release...');
   const response = await octokit.rest.repos.createRelease({
@@ -149,13 +161,30 @@ async function getOrCreateRelease(
     repo: repoName,
     tag_name: tag,
     name: tag,
-    body: releaseBody,
+    body,
     draft: false,
     prerelease: false,
   });
 
   success(`Created release with ID: ${response.data.id}`);
   return response.data.id;
+}
+
+async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        warning(`Upload failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
 }
 
 async function uploadAsset(
@@ -195,7 +224,7 @@ async function uploadAsset(
   step(`Uploading file: ${filePath}`);
   const fileContent = fs.readFileSync(filePath);
 
-  const uploadResponse = await octokit.rest.repos.uploadReleaseAsset({
+  const uploadResponse = await withRetry(() => octokit.rest.repos.uploadReleaseAsset({
     owner,
     repo: repoName,
     release_id: releaseId,
@@ -205,7 +234,7 @@ async function uploadAsset(
       'content-type': 'application/octet-stream',
       'content-length': fileContent.length,
     },
-  });
+  }));
 
   const asset = uploadResponse.data as Asset;
   success(`Upload successful: ${baseName}`);

@@ -26975,14 +26975,13 @@ async function getUploadFiles() {
   if (envFiles.length > 0) {
     info2(`Additional files from GOBUILD_FILES: ${envFiles.join(", ")}`);
   }
-  const files = await expandGlobFiles(allFiles);
-  return files;
+  return await expandGlobFiles(allFiles);
 }
 function getConfig() {
   const githubToken = core.getInput("github_token") || process.env.GITHUB_TOKEN || "";
   const tag = core.getInput("tag") || process.env.GITHUB_REF_NAME || "";
   const repo = core.getInput("repo") || process.env.GITHUB_REPOSITORY || "";
-  const releaseBody = core.getInput("release_body") || `chihqiang/upload-asset-action for ${tag}`;
+  const releaseBody = core.getInput("release_body") || "";
   const eventName = process.env.GITHUB_EVENT_NAME || "";
   const ref = process.env.GITHUB_REF || "";
   if (!githubToken) {
@@ -27024,18 +27023,46 @@ async function getOrCreateRelease(octokit, repo, tag, releaseBody) {
       throw err;
     }
   }
+  let body = releaseBody;
+  if (!body) {
+    step("Generating release notes...");
+    const notes = await octokit.rest.repos.generateReleaseNotes({
+      owner,
+      repo: repoName,
+      tag_name: tag
+    });
+    body = notes.data.body;
+    info2(`Generated release notes:
+${body}`);
+  }
   step("Creating new release...");
   const response = await octokit.rest.repos.createRelease({
     owner,
     repo: repoName,
     tag_name: tag,
     name: tag,
-    body: releaseBody,
+    body,
     draft: false,
     prerelease: false
   });
   success(`Created release with ID: ${response.data.id}`);
   return response.data.id;
+}
+async function withRetry(fn, maxRetries = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt - 1) * 1e3;
+        warning2(`Upload failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
 }
 async function uploadAsset(octokit, repo, releaseId, filePath) {
   const [owner, repoName] = parseRepo(repo);
@@ -27060,7 +27087,7 @@ async function uploadAsset(octokit, repo, releaseId, filePath) {
   }
   step(`Uploading file: ${filePath}`);
   const fileContent = import_fs2.default.readFileSync(filePath);
-  const uploadResponse = await octokit.rest.repos.uploadReleaseAsset({
+  const uploadResponse = await withRetry(() => octokit.rest.repos.uploadReleaseAsset({
     owner,
     repo: repoName,
     release_id: releaseId,
@@ -27070,7 +27097,7 @@ async function uploadAsset(octokit, repo, releaseId, filePath) {
       "content-type": "application/octet-stream",
       "content-length": fileContent.length
     }
-  });
+  }));
   const asset = uploadResponse.data;
   success(`Upload successful: ${baseName}`);
   success(`Download URL: ${asset.browser_download_url}`);
