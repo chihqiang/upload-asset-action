@@ -185,7 +185,7 @@ var require_file_command = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.prepareKeyValueMessage = exports2.issueFileCommand = void 0;
     var crypto = __importStar(require("crypto"));
-    var fs3 = __importStar(require("fs"));
+    var fs4 = __importStar(require("fs"));
     var os2 = __importStar(require("os"));
     var utils_1 = require_utils();
     function issueFileCommand(command, message) {
@@ -193,10 +193,10 @@ var require_file_command = __commonJS({
       if (!filePath) {
         throw new Error(`Unable to find environment variable for file command ${command}`);
       }
-      if (!fs3.existsSync(filePath)) {
+      if (!fs4.existsSync(filePath)) {
         throw new Error(`Missing file at path: ${filePath}`);
       }
-      fs3.appendFileSync(filePath, `${(0, utils_1.toCommandValue)(message)}${os2.EOL}`, {
+      fs4.appendFileSync(filePath, `${(0, utils_1.toCommandValue)(message)}${os2.EOL}`, {
         encoding: "utf8"
       });
     }
@@ -18522,12 +18522,12 @@ var require_io_util = __commonJS({
     var _a;
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.getCmdPath = exports2.tryGetExecutablePath = exports2.isRooted = exports2.isDirectory = exports2.exists = exports2.READONLY = exports2.UV_FS_O_EXLOCK = exports2.IS_WINDOWS = exports2.unlink = exports2.symlink = exports2.stat = exports2.rmdir = exports2.rm = exports2.rename = exports2.readlink = exports2.readdir = exports2.open = exports2.mkdir = exports2.lstat = exports2.copyFile = exports2.chmod = void 0;
-    var fs3 = __importStar(require("fs"));
+    var fs4 = __importStar(require("fs"));
     var path2 = __importStar(require("path"));
-    _a = fs3.promises, exports2.chmod = _a.chmod, exports2.copyFile = _a.copyFile, exports2.lstat = _a.lstat, exports2.mkdir = _a.mkdir, exports2.open = _a.open, exports2.readdir = _a.readdir, exports2.readlink = _a.readlink, exports2.rename = _a.rename, exports2.rm = _a.rm, exports2.rmdir = _a.rmdir, exports2.stat = _a.stat, exports2.symlink = _a.symlink, exports2.unlink = _a.unlink;
+    _a = fs4.promises, exports2.chmod = _a.chmod, exports2.copyFile = _a.copyFile, exports2.lstat = _a.lstat, exports2.mkdir = _a.mkdir, exports2.open = _a.open, exports2.readdir = _a.readdir, exports2.readlink = _a.readlink, exports2.rename = _a.rename, exports2.rm = _a.rm, exports2.rmdir = _a.rmdir, exports2.stat = _a.stat, exports2.symlink = _a.symlink, exports2.unlink = _a.unlink;
     exports2.IS_WINDOWS = process.platform === "win32";
     exports2.UV_FS_O_EXLOCK = 268435456;
-    exports2.READONLY = fs3.constants.O_RDONLY;
+    exports2.READONLY = fs4.constants.O_RDONLY;
     function exists(fsPath) {
       return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -19691,7 +19691,7 @@ var require_core = __commonJS({
       process.env["PATH"] = `${inputPath}${path2.delimiter}${process.env["PATH"]}`;
     }
     exports2.addPath = addPath;
-    function getInput2(name, options) {
+    function getInput3(name, options) {
       const val = process.env[`INPUT_${name.replace(/ /g, "_").toUpperCase()}`] || "";
       if (options && options.required && !val) {
         throw new Error(`Input required and not supplied: ${name}`);
@@ -19701,9 +19701,9 @@ var require_core = __commonJS({
       }
       return val.trim();
     }
-    exports2.getInput = getInput2;
+    exports2.getInput = getInput3;
     function getMultilineInput(name, options) {
-      const inputs = getInput2(name, options).split("\n").filter((x2) => x2 !== "");
+      const inputs = getInput3(name, options).split("\n").filter((x2) => x2 !== "");
       if (options && options.trimWhitespace === false) {
         return inputs;
       }
@@ -19713,7 +19713,7 @@ var require_core = __commonJS({
     function getBooleanInput(name, options) {
       const trueValue = ["true", "True", "TRUE"];
       const falseValue = ["false", "False", "FALSE"];
-      const val = getInput2(name, options);
+      const val = getInput3(name, options);
       if (trueValue.includes(val))
         return true;
       if (falseValue.includes(val))
@@ -19735,11 +19735,11 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issue)("echo", enabled ? "on" : "off");
     }
     exports2.setCommandEcho = setCommandEcho;
-    function setFailed2(message) {
+    function setFailed4(message) {
       process.exitCode = ExitCode.Failure;
       error3(message);
     }
-    exports2.setFailed = setFailed2;
+    exports2.setFailed = setFailed4;
     function isDebug() {
       return process.env["RUNNER_DEBUG"] === "1";
     }
@@ -23936,10 +23936,59 @@ var require_github = __commonJS({
 });
 
 // src/index.ts
-var core = __toESM(require_core());
+var core5 = __toESM(require_core());
 var github = __toESM(require_github());
-var import_fs2 = __toESM(require("fs"));
-var import_path = __toESM(require("path"));
+var import_fs3 = __toESM(require("fs"));
+
+// src/log.ts
+var core = __toESM(require_core());
+var info2 = core.info;
+var warning2 = core.warning;
+var error2 = core.error;
+var success = (message) => core.info(`\u2705 ${message}`);
+var step = (message) => core.info(`\u{1F680} ${message}`);
+
+// src/config.ts
+var core2 = __toESM(require_core());
+var Config = class {
+  constructor() {
+    this.githubToken = core2.getInput("github_token") || process.env.GITHUB_TOKEN || "";
+    this.tag = core2.getInput("tag") || process.env.GITHUB_REF_NAME || "";
+    this.repo = core2.getInput("repo") || process.env.GITHUB_REPOSITORY || "";
+    this.releaseBody = core2.getInput("release_body");
+    this.eventName = process.env.GITHUB_EVENT_NAME || "";
+    this.ref = process.env.GITHUB_REF || "";
+  }
+  /** 校验 github_token 必填 */
+  validate() {
+    if (!this.githubToken) {
+      core2.setFailed("github_token is required. Please set it via input or GITHUB_TOKEN environment variable");
+      process.exit(1);
+    }
+  }
+  /** 校验事件类型，仅支持 release 和 tag push */
+  validateEvent() {
+    if (this.eventName !== "release" && this.eventName !== "push") {
+      error2(`Must be triggered by a 'release' or 'push' event, the current event is: ${this.eventName}`);
+      process.exit(1);
+    }
+    if (this.eventName === "push" && !this.ref.startsWith("refs/tags/")) {
+      warning2("Push event is not a tag push, skip uploading");
+      process.exit(0);
+    }
+  }
+  /** 解析 owner/repo 格式 */
+  parseRepo() {
+    const parts = this.repo.split("/");
+    if (parts.length !== 2) {
+      throw new Error(`Invalid repo format: ${this.repo}, expected "owner/repo"`);
+    }
+    return parts;
+  }
+};
+
+// src/collector.ts
+var core3 = __toESM(require_core());
 
 // node_modules/glob/dist/esm/index.min.js
 var import_node_url = require("url");
@@ -26925,220 +26974,269 @@ var Ui = Object.assign(ts, { stream: Bt, iterate: Ut });
 var Ze = Object.assign(Je, { glob: Je, globSync: ts, sync: Ui, globStream: Qe, stream: Ii, globStreamSync: Bt, streamSync: ji, globIterate: es, iterate: Bi, globIterateSync: Ut, iterateSync: zi, Glob: I, hasMagic: le, escape: tt, unescape: W });
 Ze.glob = Ze;
 
-// src/index.ts
-var info2 = core.info;
-var warning2 = core.warning;
-var error2 = core.error;
-var success = (message) => core.info(`\u2705 ${message}`);
-var step = (message) => core.info(`\u{1F680} ${message}`);
-function parseRepo(repo) {
-  const parts = repo.split("/");
-  if (parts.length !== 2) {
-    throw new Error(`Invalid repo format: ${repo}, expected "owner/repo"`);
+// src/collector.ts
+var Collector = class {
+  /** 收集所有需上传的文件列表 */
+  async collect() {
+    const filesInput = core3.getInput("files");
+    const envFiles = process.env.GOBUILD_FILES?.split(/\s+/).filter((f) => f.trim()) || [];
+    const inputFiles = filesInput.split(/\s+/).filter((f) => f.trim() !== "");
+    const allFiles = [...inputFiles, ...envFiles];
+    if (envFiles.length > 0) {
+      info2(`Additional files from GOBUILD_FILES: ${envFiles.join(", ")}`);
+    }
+    return this.expandGlob(allFiles);
   }
-  return parts;
-}
-function isGlobPattern(pattern) {
-  return pattern.includes("*") || pattern.includes("?") || pattern.includes("[");
-}
-async function expandGlobFiles(patterns) {
-  const files = [];
-  const seen = /* @__PURE__ */ new Set();
-  for (const pattern of patterns) {
-    if (isGlobPattern(pattern)) {
-      const matches = await Ze(pattern, { nodir: true });
-      if (matches.length === 0) {
-        warning2(`Glob pattern "${pattern}" matched no files`);
-      } else {
-        info2(`Glob "${pattern}" matched ${matches.length} file(s): ${matches.join(", ")}`);
-        for (const file of matches) {
-          if (!seen.has(file)) {
-            seen.add(file);
-            files.push(file);
+  /** 判断是否包含通配符 */
+  isGlob(pattern) {
+    return pattern.includes("*") || pattern.includes("?") || pattern.includes("[");
+  }
+  /** 展开通配符为文件列表（自动去重） */
+  async expandGlob(patterns) {
+    const files = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const pattern of patterns) {
+      if (this.isGlob(pattern)) {
+        const matches = await Ze(pattern, { nodir: true });
+        if (matches.length === 0) {
+          warning2(`Glob pattern "${pattern}" matched no files`);
+        } else {
+          info2(`Glob "${pattern}" matched ${matches.length} file(s): ${matches.join(", ")}`);
+          for (const file of matches) {
+            if (!seen.has(file)) {
+              seen.add(file);
+              files.push(file);
+            }
           }
         }
+      } else {
+        if (!seen.has(pattern)) {
+          seen.add(pattern);
+          files.push(pattern);
+        }
       }
+    }
+    return files;
+  }
+};
+
+// src/release.ts
+var core4 = __toESM(require_core());
+var import_fs2 = __toESM(require("fs"));
+var import_path = __toESM(require("path"));
+var Release = class {
+  constructor(octokit, owner, repoName, tag) {
+    this.octokit = octokit;
+    this.owner = owner;
+    this.repoName = repoName;
+    this.tag = tag;
+  }
+  /**
+   * 确保 release 存在：
+   * 1. 按 tag 查找已有 release
+   * 2. 没有则先创建 tag，再创建 release
+   */
+  async ensureRelease(releaseBody) {
+    const existing = await this.getRelease();
+    if (existing) {
+      this.releaseId = existing;
     } else {
-      if (!seen.has(pattern)) {
-        seen.add(pattern);
-        files.push(pattern);
+      await this.ensureTag();
+      this.releaseId = await this.doCreate(releaseBody);
+    }
+    success(`Successfully obtained Release ID ${this.releaseId}`);
+    return this.releaseId;
+  }
+  /** 并发上传所有文件，任一失败则终止 */
+  async uploadAll(files) {
+    const results = await Promise.allSettled(
+      files.map((file) => this.uploadAsset(file))
+    );
+    const failed = results.filter((r) => r.status === "rejected");
+    if (failed.length > 0) {
+      for (const f of failed) {
+        const reason = f.reason;
+        error2(`Upload failed: ${reason?.message ?? reason}`);
       }
+      core4.setFailed(`${failed.length} file(s) failed to upload`);
+      return [];
     }
+    return results.map((r) => r.value);
   }
-  return files;
-}
-async function getUploadFiles() {
-  const filesInput = core.getInput("files");
-  const envFiles = process.env.GOBUILD_FILES?.split(/\s+/).filter((f) => f.trim()) || [];
-  const inputFiles = filesInput.split(/\s+/).filter((f) => f.trim() !== "");
-  const allFiles = [...inputFiles, ...envFiles];
-  if (envFiles.length > 0) {
-    info2(`Additional files from GOBUILD_FILES: ${envFiles.join(", ")}`);
-  }
-  return await expandGlobFiles(allFiles);
-}
-function getConfig() {
-  const githubToken = core.getInput("github_token") || process.env.GITHUB_TOKEN || "";
-  const tag = core.getInput("tag") || process.env.GITHUB_REF_NAME || "";
-  const repo = core.getInput("repo") || process.env.GITHUB_REPOSITORY || "";
-  const releaseBody = core.getInput("release_body") || "";
-  const eventName = process.env.GITHUB_EVENT_NAME || "";
-  const ref = process.env.GITHUB_REF || "";
-  if (!githubToken) {
-    core.setFailed("github_token is required. Please set it via input or GITHUB_TOKEN environment variable");
-    process.exit(1);
-  }
-  return {
-    githubToken,
-    tag,
-    repo,
-    releaseBody,
-    eventName,
-    ref
-  };
-}
-function validateEvent(config) {
-  if (config.eventName !== "release" && config.eventName !== "push") {
-    error2(`Must be triggered by a 'release' or 'push' event, the current event is: ${config.eventName}`);
-    process.exit(1);
-  }
-  if (config.eventName === "push" && !config.ref.startsWith("refs/tags/")) {
-    warning2("Push event is not a tag push, skip uploading");
-    process.exit(0);
-  }
-}
-async function getOrCreateRelease(octokit, repo, tag, releaseBody) {
-  const [owner, repoName] = parseRepo(repo);
-  try {
-    const response2 = await octokit.rest.repos.getReleaseByTag({
-      owner,
-      repo: repoName,
-      tag
-    });
-    info2(`Found existing release with ID: ${response2.data.id}`);
-    return response2.data.id;
-  } catch (err) {
-    const httpError = err;
-    if (httpError.status !== 404) {
-      throw err;
-    }
-  }
-  let body = releaseBody;
-  if (!body) {
-    step("Generating release notes...");
-    const notes = await octokit.rest.repos.generateReleaseNotes({
-      owner,
-      repo: repoName,
-      tag_name: tag
-    });
-    body = notes.data.body;
-    info2(`Generated release notes:
-${body}`);
-  }
-  step("Creating new release...");
-  const response = await octokit.rest.repos.createRelease({
-    owner,
-    repo: repoName,
-    tag_name: tag,
-    name: tag,
-    body,
-    draft: false,
-    prerelease: false
-  });
-  success(`Created release with ID: ${response.data.id}`);
-  return response.data.id;
-}
-async function withRetry(fn, maxRetries = 3) {
-  let lastError;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  /**
+   * 确保目标仓库存在该 tag
+   * 目标仓库可能没有该 tag，需要基于默认分支的最新 commit 创建
+   */
+  async ensureTag() {
     try {
-      return await fn();
+      await this.octokit.rest.git.getRef({
+        owner: this.owner,
+        repo: this.repoName,
+        ref: `tags/${this.tag}`
+      });
+      info2(`Tag "${this.tag}" already exists on ${this.owner}/${this.repoName}`);
+      return;
     } catch (err) {
-      lastError = err;
-      if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt - 1) * 1e3;
-        warning2(`Upload failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+      const httpError = err;
+      if (httpError.status !== 404) {
+        throw new Error(`\u68C0\u67E5 tag \u5931\u8D25: ${err?.message ?? err}`);
       }
     }
-  }
-  throw lastError;
-}
-async function uploadAsset(octokit, repo, releaseId, filePath) {
-  const [owner, repoName] = parseRepo(repo);
-  const baseName = import_path.default.basename(filePath);
-  if (!import_fs2.default.existsSync(filePath)) {
-    throw new Error(`File not found: ${filePath}`);
-  }
-  step(`Checking existing assets: ${baseName}`);
-  const assetsResponse = await octokit.rest.repos.listReleaseAssets({
-    owner,
-    repo: repoName,
-    release_id: releaseId
-  });
-  const existingAsset = assetsResponse.data.find((asset2) => asset2.name === baseName);
-  if (existingAsset) {
-    await octokit.rest.repos.deleteReleaseAsset({
-      owner,
-      repo: repoName,
-      asset_id: existingAsset.id
+    step(`Creating tag "${this.tag}" on ${this.owner}/${this.repoName}...`);
+    const { data: repo } = await this.octokit.rest.repos.get({
+      owner: this.owner,
+      repo: this.repoName
     });
-    success(`Deleted existing asset: ${baseName}`);
+    const { data: ref } = await this.octokit.rest.git.getRef({
+      owner: this.owner,
+      repo: this.repoName,
+      ref: `heads/${repo.default_branch}`
+    });
+    await this.octokit.rest.git.createRef({
+      owner: this.owner,
+      repo: this.repoName,
+      ref: `refs/tags/${this.tag}`,
+      sha: ref.object.sha
+    });
+    success(`Created tag "${this.tag}" on ${this.owner}/${this.repoName}`);
   }
-  step(`Uploading file: ${filePath}`);
-  const fileContent = import_fs2.default.readFileSync(filePath);
-  const uploadResponse = await withRetry(() => octokit.rest.repos.uploadReleaseAsset({
-    owner,
-    repo: repoName,
-    release_id: releaseId,
-    name: baseName,
-    data: fileContent,
-    headers: {
-      "content-type": "application/octet-stream",
-      "content-length": fileContent.length
+  /** 按 tag 查找已有 release */
+  async getRelease() {
+    try {
+      const response = await this.octokit.rest.repos.getReleaseByTag({
+        owner: this.owner,
+        repo: this.repoName,
+        tag: this.tag
+      });
+      info2(`Found existing release with ID: ${response.data.id}`);
+      return response.data.id;
+    } catch (err) {
+      const httpError = err;
+      if (httpError.status !== 404) {
+        throw new Error(`\u83B7\u53D6 release \u5931\u8D25: ${err?.message ?? err}`);
+      }
+      return null;
     }
-  }));
-  const asset = uploadResponse.data;
-  success(`Upload successful: ${baseName}`);
-  success(`Download URL: ${asset.browser_download_url}`);
-  return asset;
-}
-async function main() {
-  const config = getConfig();
-  info2(`GitHub Repository: ${config.repo}`);
-  info2(`Publish Tags: ${config.tag}`);
-  validateEvent(config);
-  const files = await getUploadFiles();
-  if (files.length === 0) {
-    core.setFailed("No files to upload");
-    return;
   }
-  info2(`Total files to upload: ${files.length}`);
-  for (const file of files) {
-    if (!import_fs2.default.existsSync(file)) {
-      core.setFailed(`File not found: ${file}`);
+  /** 创建 release，未传 release_body 时自动生成 release notes */
+  async doCreate(releaseBody) {
+    let body = releaseBody;
+    if (!body) {
+      step("Generating release notes...");
+      const notes = await this.octokit.rest.repos.generateReleaseNotes({
+        owner: this.owner,
+        repo: this.repoName,
+        tag_name: this.tag
+      });
+      body = notes.data.body;
+      info2(`Generated release notes:
+${body}`);
+    }
+    step("Creating new release...");
+    const response = await this.octokit.rest.repos.createRelease({
+      owner: this.owner,
+      repo: this.repoName,
+      tag_name: this.tag,
+      name: this.tag,
+      body,
+      draft: false,
+      prerelease: false
+    });
+    success(`Created release with ID: ${response.data.id}`);
+    return response.data.id;
+  }
+  /** 上传单个文件，先清理同名 asset，失败时指数退避重试 */
+  async uploadAsset(filePath) {
+    const baseName = import_path.default.basename(filePath);
+    if (!import_fs2.default.existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+    step(`Checking existing assets: ${baseName}`);
+    const assetsResponse = await this.octokit.rest.repos.listReleaseAssets({
+      owner: this.owner,
+      repo: this.repoName,
+      release_id: this.releaseId
+    });
+    const existingAsset = assetsResponse.data.find((asset2) => asset2.name === baseName);
+    if (existingAsset) {
+      await this.octokit.rest.repos.deleteReleaseAsset({
+        owner: this.owner,
+        repo: this.repoName,
+        asset_id: existingAsset.id
+      });
+      success(`Deleted existing asset: ${baseName}`);
+    }
+    step(`Uploading file: ${filePath}`);
+    const fileContent = import_fs2.default.readFileSync(filePath);
+    const uploadResponse = await this.withRetry(() => this.octokit.rest.repos.uploadReleaseAsset({
+      owner: this.owner,
+      repo: this.repoName,
+      release_id: this.releaseId,
+      name: baseName,
+      data: fileContent,
+      headers: {
+        "content-type": "application/octet-stream",
+        "content-length": fileContent.length
+      }
+    }));
+    const asset = uploadResponse.data;
+    success(`Upload successful: ${baseName}`);
+    success(`Download URL: ${asset.browser_download_url}`);
+    return asset;
+  }
+  /** 指数退避重试（1s → 2s → 4s），最多 3 次 */
+  async withRetry(fn, maxRetries = 3) {
+    let lastError;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (err) {
+        lastError = err;
+        warning2(`Upload failed (attempt ${attempt}/${maxRetries}): ${err?.message ?? err}`);
+        if (attempt < maxRetries) {
+          const delay = Math.pow(2, attempt - 1) * 1e3;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+    }
+    throw new Error(`\u4E0A\u4F20\u5931\u8D25\uFF0C\u5DF2\u91CD\u8BD5 ${maxRetries} \u6B21: ${lastError?.message ?? lastError}`);
+  }
+};
+
+// src/index.ts
+async function main() {
+  try {
+    const config = new Config();
+    config.validate();
+    info2(`GitHub Repository: ${config.repo}`);
+    info2(`Publish Tags: ${config.tag}`);
+    config.validateEvent();
+    const files = await new Collector().collect();
+    if (files.length === 0) {
+      core5.setFailed("No files to upload");
       return;
     }
+    info2(`Total files to upload: ${files.length}`);
+    for (const file of files) {
+      if (!import_fs3.default.existsSync(file)) {
+        core5.setFailed(`File not found: ${file}`);
+        return;
+      }
+    }
+    const octokit = github.getOctokit(config.githubToken);
+    const [owner, repoName] = config.parseRepo();
+    const release = new Release(octokit, owner, repoName, config.tag);
+    await release.ensureRelease(config.releaseBody);
+    const assets = await release.uploadAll(files);
+    if (assets.length === 0) return;
+    const downloadUrls = assets.map((a) => a.browser_download_url);
+    core5.setOutput("download_urls", downloadUrls.join("\n"));
+    success("All assets uploaded successfully!");
+  } catch (err) {
+    const message = err?.message ?? err;
+    error2(message);
+    core5.setFailed(String(message));
   }
-  const octokit = github.getOctokit(config.githubToken);
-  const releaseId = await getOrCreateRelease(
-    octokit,
-    config.repo,
-    config.tag,
-    config.releaseBody
-  );
-  success(`Successfully obtained Release ID ${releaseId}`);
-  const results = await Promise.allSettled(
-    files.map((file) => uploadAsset(octokit, config.repo, releaseId, file))
-  );
-  const failed = results.filter((r) => r.status === "rejected");
-  if (failed.length > 0) {
-    core.setFailed(`${failed.length} file(s) failed to upload`);
-    return;
-  }
-  const downloadUrls = results.map((r) => r.value.browser_download_url);
-  core.setOutput("download_urls", downloadUrls.join("\n"));
-  success("All assets uploaded successfully!");
 }
 main();
 /*! Bundled license information:
