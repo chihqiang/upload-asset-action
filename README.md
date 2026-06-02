@@ -21,7 +21,7 @@ A GitHub Action that uploads assets to a GitHub release, with support for cross-
 | Name | Description | Required |
 | --- | --- | --- |
 | `token` | GitHub token with `repo` scope (default: `${{ github.token }}`) | No |
-| `files` | Space-separated list of files or glob patterns (e.g., `dist/*.sha256`) | Yes |
+| `files` | Space-separated list of files or glob patterns (default: `${{ env.GOBUILD_FILES }}`) | No |
 | `tag` | Git tag name to upload assets to (default: `github.ref_name`) | No |
 | `repo` | Target repository in format `owner/repo` (default: current repository) | No |
 | `release_body` | Release description body (leave empty to auto-generate release notes) | No |
