@@ -23952,17 +23952,17 @@ var step = (message) => core.info(`\u{1F680} ${message}`);
 var core2 = __toESM(require_core());
 var Config = class {
   constructor() {
-    this.githubToken = core2.getInput("github_token") || process.env.GITHUB_TOKEN || "";
+    this.token = core2.getInput("token") || process.env.GITHUB_TOKEN || "";
     this.tag = core2.getInput("tag") || process.env.GITHUB_REF_NAME || "";
     this.repo = core2.getInput("repo") || process.env.GITHUB_REPOSITORY || "";
     this.releaseBody = core2.getInput("release_body");
     this.eventName = process.env.GITHUB_EVENT_NAME || "";
     this.ref = process.env.GITHUB_REF || "";
   }
-  /** 校验 github_token 必填 */
+  /** 校验 token 必填 */
   validate() {
-    if (!this.githubToken) {
-      core2.setFailed("github_token is required. Please set it via input or GITHUB_TOKEN environment variable");
+    if (!this.token) {
+      core2.setFailed("token is required. Please set it via input or GITHUB_TOKEN environment variable");
       process.exit(1);
     }
   }
@@ -27223,13 +27223,16 @@ async function main() {
         return;
       }
     }
-    const octokit = github.getOctokit(config.githubToken);
+    const octokit = github.getOctokit(config.token);
     const [owner, repoName] = config.parseRepo();
     const release = new Release(octokit, owner, repoName, config.tag);
-    await release.ensureRelease(config.releaseBody);
+    const releaseId = await release.ensureRelease(config.releaseBody);
+    core2.setOutput("id", releaseId);
     const assets = await release.uploadAll(files);
     if (assets.length === 0) return;
+    const fileNames = assets.map((a) => a.name);
     const downloadUrls = assets.map((a) => a.browser_download_url);
+    core5.setOutput("files", fileNames.join("\n"));
     core5.setOutput("download_urls", downloadUrls.join("\n"));
     success("All assets uploaded successfully!");
   } catch (err) {

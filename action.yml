@@ -2,9 +2,10 @@ name: 'upload-gh-release-assets'
 description: 'Upload release assets to GitHub Releases with overwrite support'
 author: 'zhiqiang <zhiqiang2033@gmail.com>'
 inputs:
-  github_token:
+  token:
     description: 'GitHub Token with `repo` scope'
-    required: true
+    required: false
+    default: ${{ github.token }}
   files:
     description: 'List of files to upload, separated by space'
     required: true
@@ -17,7 +18,19 @@ inputs:
   release_body:
     description: 'Release description body (optional)'
     required: false
+    
+env:
+  GITHUB_TOKEN: "As provided by Github Actions"
+
+outputs:
+  id:
+    description: "Release ID"
+  files:
+    description: "Uploaded file names, one per line"
+  download_urls:
+    description: "Download URLs of uploaded assets, one per line"
 runs:
+
   using: 'node20'
   main: 'dist/index.js'
 branding:

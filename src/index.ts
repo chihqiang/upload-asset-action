@@ -38,18 +38,21 @@ async function main(): Promise<void> {
     }
 
     // 4. 获取 release，不存在则创建
-    const octokit = github.getOctokit(config.githubToken);
+    const octokit = github.getOctokit(config.token);
     const [owner, repoName] = config.parseRepo();
 
     const release = new Release(octokit, owner, repoName, config.tag);
-    await release.ensureRelease(config.releaseBody);
+    const releaseId = await release.ensureRelease(config.releaseBody);
+    core.setOutput('id', releaseId);
 
     // 5. 并发上传所有文件
     const assets = await release.uploadAll(files);
     if (assets.length === 0) return;
 
-    // 6. 输出下载地址
+    // 6. 输出文件列表和下载地址
+    const fileNames = assets.map(a => a.name);
     const downloadUrls = assets.map(a => a.browser_download_url);
+    core.setOutput('files', fileNames.join('\n'));
     core.setOutput('download_urls', downloadUrls.join('\n'));
 
     success('All assets uploaded successfully!');

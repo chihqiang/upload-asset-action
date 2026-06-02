@@ -11,7 +11,7 @@ A GitHub Action that uploads assets to a GitHub release, with support for cross-
 - Supports **glob patterns** (e.g., `*.sha256`, `dist/**`)
 - Deletes existing assets with the same name to avoid duplication errors
 - **Retries failed uploads** with exponential backoff (3 attempts)
-- Outputs detailed upload status and download URLs
+- Outputs release ID, file list, and download URLs
 - Built with TypeScript for better type safety and maintainability
 
 ## Usage
@@ -20,11 +20,29 @@ A GitHub Action that uploads assets to a GitHub release, with support for cross-
 
 | Name | Description | Required |
 | --- | --- | --- |
-| `github_token` | GitHub token with `repo` scope | Yes |
+| `token` | GitHub token with `repo` scope (default: `${{ github.token }}`) | No |
 | `files` | Space-separated list of files or glob patterns (e.g., `dist/*.sha256`) | Yes |
 | `tag` | Git tag name to upload assets to (default: `github.ref_name`) | No |
 | `repo` | Target repository in format `owner/repo` (default: current repository) | No |
 | `release_body` | Release description body (leave empty to auto-generate release notes) | No |
+
+### Outputs
+
+| Name | Description |
+| --- | --- |
+| `id` | Release ID |
+| `files` | Uploaded file names, one per line |
+| `download_urls` | Download URLs of uploaded assets, one per line |
+
+### Required Permissions
+
+When using the default `${{ github.token }}`, your workflow needs the following permission:
+
+| Permission | Scope |
+| --- | --- |
+| `contents: write` | Create releases and upload assets |
+
+If you use a PAT (Personal Access Token) with `repo` scope, permissions are not needed.
 
 ### Example workflow
 
@@ -38,6 +56,8 @@ on:
 jobs:
   upload:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -51,7 +71,6 @@ jobs:
       - name: Upload release assets
         uses: chihqiang/upload-asset-action@main
         with:
-          github_token: ${{ secrets.GH_TOKEN }}
           files: |
             dist/app.tar.gz
             dist/*.sha256
@@ -59,13 +78,13 @@ jobs:
 
 ### Cross-repo upload
 
-Upload assets to a different repository:
+Upload assets to a different repository. Note that the default `${{ github.token }}` is scoped to the current repository only, so you **must** provide a PAT (Personal Access Token) with `repo` scope via the `token` input for cross-repo uploads.
 
 ```yaml
 - name: Upload assets to another repo
   uses: chihqiang/upload-asset-action@main
   with:
-    github_token: ${{ secrets.GH_TOKEN }}
+    token: ${{ secrets.GH_TOKEN }}
     files: build/output.zip
     repo: other-org/other-repo
     tag: v1.0.0
