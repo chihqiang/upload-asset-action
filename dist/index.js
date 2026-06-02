@@ -27227,7 +27227,7 @@ async function main() {
     const [owner, repoName] = config.parseRepo();
     const release = new Release(octokit, owner, repoName, config.tag);
     const releaseId = await release.ensureRelease(config.releaseBody);
-    core2.setOutput("id", releaseId);
+    core5.setOutput("id", releaseId);
     const assets = await release.uploadAll(files);
     if (assets.length === 0) return;
     const fileNames = assets.map((a) => a.name);
