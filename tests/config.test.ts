@@ -33,7 +33,7 @@ describe('Config', () => {
   it('should read from inputs', () => {
     vi.mocked(core.getInput).mockImplementation((name) => {
       const map: Record<string, string> = {
-        github_token: 'my-token',
+        token: 'my-token',
         tag: 'v1.0.0',
         repo: 'owner/my-repo',
         release_body: 'my release notes',
@@ -42,7 +42,7 @@ describe('Config', () => {
     });
 
     const config = new Config();
-    expect(config.githubToken).toBe('my-token');
+    expect(config.token).toBe('my-token');
     expect(config.tag).toBe('v1.0.0');
     expect(config.repo).toBe('owner/my-repo');
     expect(config.releaseBody).toBe('my release notes');
@@ -55,25 +55,25 @@ describe('Config', () => {
     process.env.GITHUB_REPOSITORY = 'org/other-repo';
 
     const config = new Config();
-    expect(config.githubToken).toBe('env-token');
+    expect(config.token).toBe('env-token');
     expect(config.tag).toBe('v2.0.0');
     expect(config.repo).toBe('org/other-repo');
     expect(config.releaseBody).toBe('');
   });
 
-  it('should validate github_token', () => {
+  it('should validate token', () => {
     vi.mocked(core.getInput).mockReturnValue('');
 
     const config = new Config();
     expect(() => config.validate()).toThrow();
     expect(core.setFailed).toHaveBeenCalledWith(
-      expect.stringContaining('github_token')
+      expect.stringContaining('token')
     );
   });
 
   it('should pass validate with token', () => {
     vi.mocked(core.getInput).mockImplementation((name) =>
-      name === 'github_token' ? 'valid-token' : ''
+      name === 'token' ? 'valid-token' : ''
     );
 
     const config = new Config();
@@ -82,7 +82,7 @@ describe('Config', () => {
 
   it('should parseRepo correctly', () => {
     vi.mocked(core.getInput).mockImplementation((name) =>
-      name === 'github_token' ? 'token' : ''
+      name === 'token' ? 'token' : ''
     );
     process.env.GITHUB_REPOSITORY = 'owner/the-repo';
 
@@ -94,7 +94,7 @@ describe('Config', () => {
 
   it('should throw on invalid repo format', () => {
     vi.mocked(core.getInput).mockImplementation((name) =>
-      name === 'github_token' ? 'token' : ''
+      name === 'token' ? 'token' : ''
     );
     process.env.GITHUB_REPOSITORY = 'no-slash';
 
@@ -106,7 +106,7 @@ describe('Config', () => {
     process.env.GITHUB_EVENT_NAME = 'release';
     process.env.GITHUB_REF = 'refs/tags/v1.0.0';
     vi.mocked(core.getInput).mockImplementation((name) =>
-      name === 'github_token' ? 'token' : ''
+      name === 'token' ? 'token' : ''
     );
 
     const config = new Config();
@@ -117,7 +117,7 @@ describe('Config', () => {
     process.env.GITHUB_EVENT_NAME = 'push';
     process.env.GITHUB_REF = 'refs/tags/v1.0.0';
     vi.mocked(core.getInput).mockImplementation((name) =>
-      name === 'github_token' ? 'token' : ''
+      name === 'token' ? 'token' : ''
     );
 
     const config = new Config();
@@ -128,7 +128,7 @@ describe('Config', () => {
     process.env.GITHUB_EVENT_NAME = 'push';
     process.env.GITHUB_REF = 'refs/heads/main';
     vi.mocked(core.getInput).mockImplementation((name) =>
-      name === 'github_token' ? 'token' : ''
+      name === 'token' ? 'token' : ''
     );
 
     const config = new Config();
@@ -138,7 +138,7 @@ describe('Config', () => {
   it('should reject unsupported event', () => {
     process.env.GITHUB_EVENT_NAME = 'pull_request';
     vi.mocked(core.getInput).mockImplementation((name) =>
-      name === 'github_token' ? 'token' : ''
+      name === 'token' ? 'token' : ''
     );
 
     const config = new Config();

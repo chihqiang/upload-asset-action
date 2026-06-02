@@ -5,7 +5,7 @@ import { error, warning } from './log';
  * 配置类，从 GitHub Actions 输入和环境变量读取参数
  */
 export class Config {
-  readonly githubToken: string;
+  readonly token: string;
   readonly tag: string;
   readonly repo: string;
   readonly releaseBody: string;
@@ -14,7 +14,7 @@ export class Config {
 
   constructor() {
     // 从 input 或环境变量读取
-    this.githubToken = core.getInput('github_token') || process.env.GITHUB_TOKEN || '';
+    this.token = core.getInput('token') || process.env.GITHUB_TOKEN || '';
     this.tag = core.getInput('tag') || process.env.GITHUB_REF_NAME || '';
     this.repo = core.getInput('repo') || process.env.GITHUB_REPOSITORY || '';
     this.releaseBody = core.getInput('release_body');
@@ -22,10 +22,10 @@ export class Config {
     this.ref = process.env.GITHUB_REF || '';
   }
 
-  /** 校验 github_token 必填 */
+  /** 校验 token 必填 */
   validate(): void {
-    if (!this.githubToken) {
-      core.setFailed('github_token is required. Please set it via input or GITHUB_TOKEN environment variable');
+    if (!this.token) {
+      core.setFailed('token is required. Please set it via input or GITHUB_TOKEN environment variable');
       process.exit(1);
     }
   }
